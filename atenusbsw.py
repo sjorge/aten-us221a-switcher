@@ -1,7 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3.7
 # require py-hidapi
 
+import sys
 import hid
+import argparse
 from time import sleep
 
 class ATENUsbSwitch(object):
@@ -77,10 +79,37 @@ class ATENUsbSwitch(object):
 
 if __name__ == "__main__":
     usbsw = ATENUsbSwitch()
-    if usbsw.is_active():
-        print("Device already attached.")
-    else:
-        print("Switching device ...", end="", flush=True)
-        usbsw.switch()
+    argp = argparse.ArgumentParser(description="ATEN USB Switch CLI")
+    argp.add_argument("-a", "--is-active", dest="do_check", action="store_true", help="return 0 if we are the active host")
+    argp.add_argument("-s", "--switch", dest="do_switch", action="store_true", help="switch ourselves to be the active host")
+    argp.add_argument("-v", "--verbose", dest="be_verbose", action="store_true", help="verbose console messages")
+    args = argp.parse_args()
+
+    if args.do_check and args.do_switch and args.be_verbose:
+        print("WARNING: both --is-active and --switch provided, ignoring --switch!", file=sys.stderr)
+
+    if args.do_check:
         if usbsw.is_active():
-            print(" Done!")
+            if args.be_verbose:
+                print("This host is active.")
+            sys.exit(0)
+        else:
+            if args.be_verbose:
+                print("Another host is active.")
+            sys.exit(1)
+    elif args.do_switch:
+        if not usbsw.is_active():
+            if args.be_verbose:
+                print("Switching this host to active...")
+            usbsw.switch()
+        if usbsw.is_active():
+            if args.be_verbose:
+                print("This host is now active.")
+            sys.exit(0)
+        else:
+            if args.be_verbose:
+                print("ERROR: Failed to switch!", file=sys.stderr)
+            sys.exit(1)
+    else:
+        argp.print_help()
+        sys.exit(2)
