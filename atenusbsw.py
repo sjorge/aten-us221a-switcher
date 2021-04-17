@@ -82,8 +82,14 @@ if __name__ == "__main__":
     argp = argparse.ArgumentParser(description="ATEN USB Switch CLI")
     argp.add_argument("-a", "--is-active", dest="do_check", action="store_true", help="return 0 if we are the active host")
     argp.add_argument("-s", "--switch", dest="do_switch", action="store_true", help="switch ourselves to be the active host")
+    argp.add_argument("--carp", dest="carp_mode", action="store", choices=["MASTER", "BACKUP"],
+            help="cleam switch based on CARP VIP status")
     argp.add_argument("-v", "--verbose", dest="be_verbose", action="store_true", help="verbose console messages")
     args = argp.parse_args()
+
+    if args.carp_mode:
+        args.do_switch = True if args.carp_mode == "MASTER" else False
+        args.do_check = True if args.carp_mode == "BACKUP" else False
 
     if args.do_check and args.do_switch and args.be_verbose:
         print("WARNING: both --is-active and --switch provided, ignoring --switch!", file=sys.stderr)
